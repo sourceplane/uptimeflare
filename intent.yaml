@@ -178,5 +178,5 @@ repo:
   docs:
     overview: README.md
     pages:
-      - { path: specs/epics/uptimeflare/README.md, role: reference, title: The epic }
-      - { path: specs/epics/uptimeflare/design.md, role: architecture, title: Design }
+      - { path: ai/context/operations.md, role: runbook, title: Operating contract }
+      - { path: ai/context/deployment.md, role: reference, title: Live deployment manifest }

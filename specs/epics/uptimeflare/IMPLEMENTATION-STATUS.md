@@ -7,8 +7,8 @@ As built, kept apart from the plan.
 | UF0 — the spec | ✅ shipped | [#1](https://github.com/sourceplane/uptimeflare/pull/1) |
 | UF1 — the monitor on Workers | ✅ shipped | [#2](https://github.com/sourceplane/uptimeflare/pull/2) |
 | UF2 — the D1 database and its schema | ✅ shipped | [#3](https://github.com/sourceplane/uptimeflare/pull/3) |
-| UF3 — ready to instantiate | ✅ this pull request | UF3 |
-| UF4 — a baseline | planned | — |
+| UF3 — ready to instantiate | ✅ shipped | [#4](https://github.com/sourceplane/uptimeflare/pull/4) |
+| UF4 — a baseline | ✅ this pull request; tagged `baseline-v1` | UF4 |
 
 ## Upstream
 
@@ -48,6 +48,26 @@ components, styles and translations, the badge and data APIs — is upstream's.
 - UF2: `terraform validate`; the migrations into real SQLite; `db:migrate:local`
   creates `monitor_state` in wrangler's local D1; a local `orun plan` for a
   push to main orders `cloudflare-d1 → db-migrate → web` per environment.
+
+- UF4: every Baseline CI tier locally — the contract tests (manifest,
+  phases, coverage, rebrand, retouch, bootstrap-defer, wire), the component
+  docs (`--check`), the blueprint read by orun (`--status`), the leak gate,
+  placement (the offline bootstrap of both phases and the product's own
+  plans: `cloudflare-d1 → db-migrate → web` per environment on the merge,
+  advisory on a pull request, nothing on the 02-docs merge) and the e2e (the
+  landing's checks, the stage lanes' steps in the job's own tree, the
+  migrations against a stand-in D1 API, the built Worker served with its
+  trigger fired, the smoke, every route, the password gate); `orun catalog
+  validate` reports no errors.
+
+## The baseline (UF4)
+
+Built on turso-starter's `main` shape (the turso v8 / orun v2.88.0 fast
+shape: one `secrets` reconcile, the task set-up in the background, landings
+checked here, a 5 s watch, no lockfile hook, no wiring await; the
+manual-deploy contract in `ci.yml`). Two phases: `01-product` (8 minutes,
+an estimate: turso-starter's measured shape plus the first trigger's wait)
+and `02-docs` (1). The card's and the registry's figure is their sum, 9.
 
 ## Not verified offline
 

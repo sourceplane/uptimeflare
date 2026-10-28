@@ -9,18 +9,64 @@ Cloudflare Worker**: the status page built by
 Static Assets, and the checks on a **Cron Trigger** of the same Worker, their
 state in a **Cloudflare D1** database provisioned by Terraform through
 [Orun](https://github.com/sourceplane/orun) and its schema applied by
-migrations.
+migrations — and packaged as an **Orun baseline**: one command takes a new
+status page from nothing to live and checking on stage and prod, in its own
+repository, under its own name, in ONE landing.
 
 Upstream already runs on Cloudflare, as two deployables — a Pages project
 built by `@cloudflare/next-on-pages` for the page and a second Worker for the
 checks, sharing one D1 database. Here they are one Worker: its custom entry
 (`apps/web/worker.ts`) re-exports OpenNext's `fetch` and adds `scheduled`,
 which runs upstream's checker loop unchanged. The Durable Object remote
-checker (geo-specific checks) is left out. See
+checker (geo-specific checks) is left out. What the baseline adds is
+everything needed to make a copy of it somebody else's, built the way
+[turso-starter](https://github.com/sourceplane/turso-starter) and
+[cron-starter](https://github.com/sourceplane/cron-starter) are. See
 [`specs/epics/uptimeflare`](specs/epics/uptimeflare/README.md) for the
 design, the milestones and the as-built status.
 
-## What is here
+## Instantiating a product
+
+```bash
+git clone --depth 1 --branch <baseline-tag> https://github.com/sourceplane/uptimeflare
+cd uptimeflare
+orun new --blueprint repo-blueprint.yaml --out ~/sites/acme-status --run-hooks --resume \
+  --set reponame=acme-status --set productname="Acme Status" \
+  --set githuborg=acme-inc --set subdomain=<workers-dev-subdomain>
+```
+
+Or, once the platform's registry lists it, from the Orun console (Baselines →
+`uptimeflare` → Build). Two phases: **`01-product`** creates the repository
+and lands the whole product as ONE pull request — intent, CI, tooling, the D1
+root, the migrations, the status page with its checker, and its tests — and
+one convergence, per environment, applies the D1 database, then its
+migrations, then deploys the Worker with its id and its Cron Trigger,
+smoke-tested on a check the trigger recorded; **`02-docs`** records the live
+deployment from probed facts. **[BOOTSTRAP.md](BOOTSTRAP.md)** is the operator
+guide; [docs/phases/](docs/phases/README.md) has a page per phase. The
+Workers Free plan is enough: the product registers one Cron Trigger per
+Worker.
+
+The new repository receives the **product only** — the app, its D1 root, its
+migrations and their runner, its tests, its CI, its tooling, a README of its
+own and its operating contract — renamed throughout to the product's name,
+repository, Cloudflare Worker and database names. None of this repository's
+machinery ships.
+
+| What makes it a baseline | Where |
+|---|---|
+| The console card (inputs, secrets, programme) | `blueprint.yaml` |
+| The build document (modules, phases, hooks) | `repo-blueprint.yaml` |
+| This tree's identity, and the bootstrap's task contracts | `.baseline/` |
+| The rename engine | `tooling/rebrand/rebrand.mjs` |
+| The bootstrap's helpers (deferrals, redeploy marker, work-tree strip) | `tooling/bootstrap/` |
+| The component-docs generator | `tooling/catalog/gen-component-docs.py` |
+| The deployment-record renderer | `hooks/render-deployment-docs.sh` |
+| The product's README and context pack | `.baseline/product/README.md`, `ai/context/` |
+| The baseline's tests: contract, wiring, leak, offline bootstrap, end to end | `testing/`, `.github/workflows/baseline.yml` |
+| Cutting a `baseline-vN` tag | `.github/workflows/tag.yml` |
+
+## What is here (the product)
 
 | Surface | Where |
 |---|---|
@@ -145,15 +191,11 @@ step checks the config exists before it builds.
 
 ## CI
 
-`ci.yml` is the Orun pipeline: `orun plan --changed`, then one job per lane.
-A pull request runs the verify lanes (the packages type-checked, linted,
-tested and built, both test suites, the D1 root planned, the Worker built and
-dry-deployed per environment); a merge applies the D1 database, migrates it,
-then deploys stage → prod. It plans nothing while `intent.yaml` names the
-placeholder workspace `ws_CHANGE_ME`, as this repository does. A manual run
-(Orunbase's Deploy button, or Run workflow on `main`) plans the environment
-and components it names under the push-to-main trigger, so they deploy as a
-merge deploys them.
+| Workflow | What it runs | Ships to a product |
+|---|---|---|
+| `ci.yml` | the Orun pipeline, and the only workflow a product carries: `orun plan --changed`, then one job per lane. A pull request runs the verify lanes (the packages type-checked, linted, tested and built, both test suites, the D1 root planned, the Worker built and dry-deployed per environment), except the bootstrap's own landings (`orun/BASE-*`), where `plan` alone is the check; a merge applies the D1 database, migrates it, then deploys stage → prod. It plans nothing while `intent.yaml` names the placeholder workspace `ws_CHANGE_ME`, as this repository does. A manual run (Orunbase's Deploy button, or Run workflow on `main`) plans the environment and components it names under the push-to-main trigger, so they deploy as a merge deploys them | yes |
+| `baseline.yml` | the baseline's own tiers: contract tests, the wiring path, the component docs, the blueprint read by the pinned orun, the leak gate, the offline bootstrap with the product's own plan, and the product built in the job tree, migrated, dry-deployed, served, its trigger fired and its checks read back | no |
+| `tag.yml` | cuts a `baseline-vN` tag (manual) | no |
 
 ## Licence
 
