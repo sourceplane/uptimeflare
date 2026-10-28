@@ -8,7 +8,7 @@ The port keeps the status page, the incident history, the latency charts, the ba
 
 | Field | Value |
 |-------|-------|
-| Status | UF0–UF1 shipped (#1, #2); UF2 in review |
+| Status | UF0–UF2 shipped (#1–#3); UF3 in review |
 | Cluster | **UF** (UF0–UF4) |
 | Owner(s) | `apps/web` (the status page, `worker.ts`, `monitor/`, `uptime.config.ts`) · `tests/web` · `infra/terraform/cloudflare-d1` · `packages/db` + `infra/db-migrate` · `tests/db` |
 | Builds on | `cron-starter` (one OpenNext Worker with a `scheduled` handler on its own Cron Trigger), `turso-starter` (the `cloudflare-d1` root, the D1 migration runner and `db-migrate`), `cirrus-baseline` (the `@@wiring(...)@@` deploy-time render) |
