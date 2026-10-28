@@ -1,0 +1,38 @@
+// The source of wrangler.jsonc, which tooling/wire renders from it: from
+// wiring.fixture.json for local work (`pnpm run wire:fixture`, committed as
+// that render), and on every Orun lane from the wiring document the
+// `cloudflare-d1` Terraform root lease-publishes (WIRING_CLOUDFLARE_D1_<ENV>)
+// — dev, which no root applies to, from the fixture (component.yaml's
+// buildCommand). Edit this file, never wrangler.jsonc. The workers-assets
+// composition deploys one environment per job with no wrangler `--env`, so
+// `__ENV__` names the environment this is rendered for.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "uptimeflare-web",
+  // The custom entry: the fetch handler @opennextjs/cloudflare generates plus
+  // the `scheduled` handler the Cron Trigger calls (see worker.ts).
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-01",
+  // global_fetch_strictly_public: a check of a URL on this account (another
+  // workers.dev Worker, a zone of its own) goes out over the internet, as an
+  // outside visitor's request would, instead of being refused.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  // ONE Cron Trigger, every minute, as upstream's checker Worker had. Two per
+  // product (stage, prod) fit Workers Free's five per account.
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  // The monitor state — the D1 database upstream's checker and status page shared.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "@@wiring(cloudflare-d1/__ENV__:d1_database_name)@@",
+      "database_id": "@@wiring(cloudflare-d1/__ENV__:d1_database_id)@@"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "extends": "../../tooling/tsconfig/web.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": [
+      "node",
+      "@cloudflare/workers-types"
+    ],
+    "paths": {
+      "@/*": [
+        "../../apps/web/*"
+      ],
+      "cloudflare:sockets": [
+        "./stubs/cloudflare-sockets.ts"
+      ]
+    },
+    // The app's own compiler options for the app's files these tests import
+    // (apps/web/tsconfig.json is upstream's strict, without these two): the
+    // test package type-checks them as the app does, not more strictly.
+    "noUncheckedIndexedAccess": false,
+    "noImplicitReturns": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "stubs/**/*.ts",
+    "../../apps/web/cloudflare-env.d.ts"
+  ]
+}

@@ -1,0 +1,4 @@
+# Copy to .dev.vars for `next dev` / `wrangler dev` (never committed).
+# Optional: put the status page behind HTTP Basic auth, as `user:password`.
+# Deployed, this is the Orun secret STATUS_PAGE_PASSWORD (README).
+# STATUS_PAGE_PASSWORD=admin:change-me

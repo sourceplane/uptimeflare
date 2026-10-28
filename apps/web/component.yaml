@@ -1,0 +1,119 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: web
+  description: UptimeFlare's status page and checker in one Worker (Next.js on Cloudflare Workers + Static Assets via @opennextjs/cloudflare, the checks on its Cron Trigger, per environment)
+spec:
+  type: cloudflare-workers-assets-turbo
+  lifecycle: production
+  owner: platform
+  # `app`, not `web`: a domain and a component share one name space in the
+  # catalog, and a domain called `web` hid this component from it.
+  domain: app
+  path: apps/web
+  # Its own lane per environment: the Next.js build is the longest job in the
+  # plan, and a shared lane would wait on it.
+  lane: isolated
+  # INFRA BEFORE APP. The Worker binds the D1 database by id, and the id is
+  # rendered into its config during the build from the wiring document the
+  # cloudflare-d1 root lease-publishes after its apply. A job resolves its
+  # secrets when it STARTS, so on a merge to main this deploy waits for that
+  # environment's apply (enforced) and the document is there; a pull request
+  # deploys nothing, so nothing on one waits (advisory).
+  dependsOn:
+    - component: cloudflare-d1
+      mode: enforced
+      modeRules:
+        - mode: advisory
+          when:
+            triggerRef: github-pull-request
+  secretEnv:
+    WIRING_CLOUDFLARE_D1_STAGE: "secret://uptimeflare/uptimeflare/stage/WIRING_CLOUDFLARE_D1"
+    WIRING_CLOUDFLARE_D1_PROD: "secret://uptimeflare/uptimeflare/prod/WIRING_CLOUDFLARE_D1"
+  # The status page's password, `user:password`, stored per environment as the
+  # product's secret STATUS_PAGE_PASSWORD (README → A private status page).
+  # The Worker reads it at request time (proxy.ts), so the build hands it to
+  # the Worker as a Worker secret and no bundle contains it (buildCommand
+  # below). BEST-EFFORT, wire-now-seed-later: a key nobody has stored is
+  # skipped when the job resolves its secrets (no env var, no failure), and the
+  # page is public — which is how a fresh product deploys.
+  optionalSecretEnv:
+    STATUS_PAGE_PASSWORD: "secret://uptimeflare/uptimeflare/{{ .environment }}/STATUS_PAGE_PASSWORD"
+  subscribe:
+    environments:
+      - name: dev
+        profile: verify
+      - name: stage
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+      - name: prod
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+
+    workspaceDir: ../..
+    appDir: .
+
+    turboFilter: "@app/web"
+    wranglerConfig: wrangler.jsonc
+
+    # @opennextjs/cloudflare emits a Worker entrypoint plus a static-assets
+    # directory bound via ASSETS — both deploy in one `wrangler deploy`. The
+    # entry here is the custom worker (fetch from the generated worker + the
+    # scheduled handler that runs the checks); wrangler bundles the generated
+    # one into it.
+    workerEntrypoint: worker.ts
+    assetsDir: .open-next/assets
+
+    # Per-env worker name: uptimeflare-web-{dev,stage,prod}. The one Cron
+    # Trigger in wrangler.jsonc (every minute) is registered on each deployed
+    # Worker, so stage and prod each check every monitor into their own
+    # database.
+    workerName: uptimeflare-web
+    environmentAwareWorkerName: true
+
+    # The account's workers.dev subdomain; exported to the smoke step as
+    # ${WORKERS_DEV_SUBDOMAIN} and used to build ${DEPLOYED_URL}.
+    workersDevSubdomain: your-workers-subdomain
+
+    installCommand: pnpm install --frozen-lockfile
+    # Render this environment's wrangler config, then build. stage and prod
+    # render from the wiring document their cloudflare-d1 apply published
+    # (secretEnv above, resolved before the job's first step); dev, which no
+    # root applies to and which only verifies, renders from the committed
+    # fixture. The committed wrangler.jsonc (the fixture render) is what the
+    # composition's verify-app-structure step finds before this runs; the
+    # render keeps its `main` (worker.ts) and its one `triggers.crons` entry.
+    # The password never reaches the build (`env -u`): the Worker reads it at
+    # request time. Then, when the environment has one, it goes to the Worker
+    # as a SECRET (tooling/wire/worker-secrets.mjs: `wrangler secret bulk`,
+    # the value over stdin) before the composition deploys it. Only the deploy
+    # lane holds a Cloudflare credential, so a verify lane builds the same and
+    # pushes nothing.
+    buildCommand: node ../../tooling/wire/live.mjs --template wrangler.template.jsonc --out wrangler.jsonc --components cloudflare-d1 --env "${ORUN_ENVIRONMENT}" --fixture wiring.fixture.json --fixture-envs dev && env -u STATUS_PAGE_PASSWORD pnpm exec turbo run build --filter=@app/web && node ../../tooling/wire/worker-secrets.mjs --secret STATUS_PAGE_PASSWORD --worker "uptimeflare-web-${ORUN_ENVIRONMENT}" --config wrangler.jsonc
+
+    # Smoke: the CRON's effect is readable. Every minute the trigger checks
+    # every monitor through the scheduled handler, which writes the state —
+    # its `lastUpdate`, in seconds — to the D1 database; /api/data, answered
+    # only by the Worker reading that database, must carry an `updatedAt` no
+    # older than ten minutes (the state is written at least every three). A
+    # page that merely renders proves neither the trigger nor the binding, and
+    # the page's name is the owner's to change. When the environment has a
+    # STATUS_PAGE_PASSWORD the request carries it. The composition retries
+    # this with backoff (~4.5 min), usually long enough for a first deploy's
+    # new trigger to fire (a rerun of the failed lane covers the rest). Read
+    # only; the response is buffered before it is parsed.
+    smokeCommand: "body=$(curl -sf ${STATUS_PAGE_PASSWORD:+-u \"${STATUS_PAGE_PASSWORD}\"} \"${DEPLOYED_URL}/api/data\") && at=$(printf '%s' \"${body}\" | grep -Eo '\"updatedAt\":[0-9]+' | grep -Eo '[0-9]+$') && [ $(( $(date +%s) - at )) -lt 600 ]"
+  labels:
+    team: platform
+    layer: delivery
+    surface: web
+    runtime: cloudflare
