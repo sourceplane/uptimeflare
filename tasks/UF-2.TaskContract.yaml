@@ -1,0 +1,17 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: UF-2
+  title: "The monitor on Workers"
+spec:
+  goal: UptimeFlare's status page runs on Cloudflare Workers + Static Assets through @opennextjs/cloudflare, and a Cron Trigger on the same Worker runs its monitor loop, the state in the DB D1 binding, with a per-environment rendered wrangler config and green checks
+  affects:
+    - apps/web
+    - tests/web
+    - pnpm-lock.yaml
+    - package.json
+    - turbo.json
+  doneWhen:
+    - pnpm wire:fixture, typecheck, lint, test and build are green
+    - wrangler dev --test-scheduled serves the page, a fired trigger checks every monitor and /api/data answers the state it wrote
+  gates: []

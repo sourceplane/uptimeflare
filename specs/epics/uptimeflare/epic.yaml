@@ -1,0 +1,41 @@
+# The epic's declaration. metadata.name equals the directory name; metadata.key
+# is the task-key prefix this epic reserves (UF → UF-1, UF-2, …). Owner, target
+# date and health are the platform's — never written here.
+apiVersion: orun.io/v1
+kind: Epic
+metadata:
+  name: uptimeflare
+  key: UF
+spec:
+  title: "UptimeFlare's uptime monitor and status page on one Cloudflare Worker with D1"
+  summary: "UptimeFlare (lyc8503/UptimeFlare, Apache-2.0) — HTTP, HTTPS and TCP checks every minute, incident history, latency charts and a status page — runs as ONE Cloudflare Worker: the status page (Next.js pages router, Mantine) built by @opennextjs/cloudflare instead of @cloudflare/next-on-pages, and the checks on a Cron Trigger of the same Worker through a custom entry that adds the `scheduled` handler, instead of a second Worker. The monitor state stays in Cloudflare D1, as upstream keeps it since 2026-01: a database Terraform provisions per environment through Orun, its key/value table applied by db-migrate before the Worker deploys. The Durable Object remote checker (geo-specific checks) is left out; every other check runs from the Worker's own location."
+  state: started
+  milestones:
+    - name: "UF0 — the spec"
+      exitCriteria:
+        - "intent, CI, the shared tooling, the spec index, this doc set and the task contracts are on main"
+      tasks: [UF-1]
+    - name: "UF1 — the monitor on Workers"
+      exitCriteria:
+        - "apps/web is the upstream status page on @opennextjs/cloudflare, its state read through the DB D1 binding"
+        - "worker.ts adds the scheduled handler: one Cron Trigger runs upstream's monitor loop and writes the compacted state to D1"
+        - "the wrangler config renders per environment from the cloudflare-d1 root's wiring document (fixture in verify, live in deploy)"
+        - "`pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` are green"
+        - "`wrangler dev --test-scheduled` serves the page, a fired trigger records a check of every monitor, and /api/data answers it"
+      tasks: [UF-2]
+    - name: "UF2 — the D1 database from Terraform, the schema through db-migrate"
+      exitCriteria:
+        - "infra/terraform/cloudflare-d1 provisions the stage and prod databases and publishes the wiring document the app renders from"
+        - "packages/db's runner, run by infra/db-migrate, creates the monitor_state table before the Worker deploys"
+      tasks: [UF-3]
+    - name: "UF3 — ready to instantiate"
+      exitCriteria:
+        - "the README says how to configure monitors, run, test, preview, fire a check and deploy"
+        - "the as-built status records every departure from the upstream template"
+      tasks: [UF-4]
+    - name: "UF4 — a baseline, in one landing"
+      exitCriteria:
+        - "blueprint.yaml (the console card) and repo-blueprint.yaml (the build) take a new status page from nothing to live on stage and prod in ONE landing (01-product) and a hook-only record (02-docs)"
+        - "the product's push-to-main plan applies cloudflare-d1, then db-migrate, then deploys web, per environment"
+        - "Baseline CI is green: contract tests, the blueprint read by the pinned orun, the leak gate, the offline bootstrap and the end-to-end tier (a fired trigger's checks read back from D1 under wrangler dev)"
+      tasks: [UF-5]
