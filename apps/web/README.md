@@ -18,7 +18,7 @@ checker (`monitor/`, upstream's `worker/src`) on the Worker's Cron Trigger.
 
 ```bash
 pnpm run wire:fixture                 # render wrangler.jsonc from the fixture (committed)
-pnpm db:init:local                    # create the monitor_state table in wrangler's local D1
+pnpm db:migrate:local                 # apply packages/db's migrations to wrangler's local D1
 pnpm build                            # next build + opennextjs-cloudflare build
 pnpm exec wrangler dev --test-scheduled
 curl 'http://localhost:8787/__scheduled?cron=*+*+*+*+*'   # run the checker once

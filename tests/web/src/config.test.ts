@@ -47,6 +47,20 @@ describe("CVE-2026-29779: the page hands the browser only what it shows", () => 
   });
 });
 
+describe("the schema the checker and the page share", () => {
+  it("is the table the migrations create (packages/db, 010_monitor_state)", async () => {
+    const { MONITOR_STATE_DDL } = await import("./d1");
+    const sql = readFileSync(path.resolve(app, "../../packages/db/src/migrations/010_monitor_state/up.sql"), "utf8")
+      .replace(/^--.*$/gm, "")
+      .replace(/\s+/g, " ")
+      .replace(/\( /g, "(")
+      .replace(/ \)/g, ")")
+      .replace(/;\s*$/, "")
+      .trim();
+    expect(sql).toBe(MONITOR_STATE_DDL);
+  });
+});
+
 describe("one Worker: the page and the checker", () => {
   it("enters through worker.ts, which adds the checker's scheduled handler to OpenNext's fetch", () => {
     const tpl = jsonc(read("wrangler.template.jsonc"));

@@ -7,7 +7,7 @@
     "build": "next build && opennextjs-cloudflare build --skipBuild --skipWranglerConfigCheck && opennextjs-cloudflare populateCache local",
     "start": "next start -p 3000",
     "preview": "opennextjs-cloudflare preview",
-    "db:init:local": "wrangler d1 execute DB --local --config wrangler.jsonc --file init.sql",
+    "db:migrate:local": "node ../../tooling/migrations/local.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "wire:fixture": "node ../../tooling/wire/render.mjs --template wrangler.template.jsonc --out wrangler.jsonc --map wiring.fixture.json --env stage"

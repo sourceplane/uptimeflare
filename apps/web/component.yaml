@@ -16,12 +16,21 @@ spec:
   lane: isolated
   # INFRA BEFORE APP. The Worker binds the D1 database by id, and the id is
   # rendered into its config during the build from the wiring document the
-  # cloudflare-d1 root lease-publishes after its apply. A job resolves its
-  # secrets when it STARTS, so on a merge to main this deploy waits for that
-  # environment's apply (enforced) and the document is there; a pull request
-  # deploys nothing, so nothing on one waits (advisory).
+  # cloudflare-d1 root lease-publishes after its apply; and the checker writes
+  # and the page reads the `monitor_state` table, which db-migrate creates in
+  # that database. A job resolves its secrets when it STARTS, so on a merge to
+  # main this deploy waits for both (enforced) — one convergence runs
+  # cloudflare-d1 → db-migrate → web per environment, and the document and the
+  # schema are there. A pull request deploys nothing, so nothing on one waits
+  # (advisory).
   dependsOn:
     - component: cloudflare-d1
+      mode: enforced
+      modeRules:
+        - mode: advisory
+          when:
+            triggerRef: github-pull-request
+    - component: db-migrate
       mode: enforced
       modeRules:
         - mode: advisory
