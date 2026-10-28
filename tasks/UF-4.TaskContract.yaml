@@ -1,0 +1,15 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: UF-4
+  title: "Ready to instantiate"
+spec:
+  goal: A reader can configure the monitors, run, test, preview, fire a check and deploy the status page from the README alone, and the as-built status records every departure from upstream
+  affects:
+    - README.md
+    - apps/web/README.md
+    - specs/epics/uptimeflare
+  doneWhen:
+    - the README quick start works from a fresh clone
+    - IMPLEMENTATION-STATUS.md lists every pull request and departure
+  gates: []

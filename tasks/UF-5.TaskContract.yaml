@@ -1,0 +1,24 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: UF-5
+  title: "A baseline, in one landing"
+spec:
+  goal: uptimeflare becomes an Orun baseline — a new status page goes from nothing to live on stage and prod in one landing, its D1 database applied and migrated before the Worker that binds it deploys
+  affects:
+    - blueprint.yaml
+    - repo-blueprint.yaml
+    - .baseline
+    - tooling/rebrand
+    - tooling/bootstrap
+    - tooling/catalog
+    - hooks
+    - ai/context
+    - docs/phases
+    - BOOTSTRAP.md
+    - testing
+    - .github/workflows
+  doneWhen:
+    - Baseline CI is green — contract tests, the blueprint read by the pinned orun, the leak gate, the offline bootstrap and the end-to-end tier
+    - a site built from it carries the site only, renamed throughout to its own name, repository, database and Worker
+  gates: []

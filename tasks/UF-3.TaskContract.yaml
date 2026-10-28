@@ -1,0 +1,17 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: UF-3
+  title: "The D1 database from Terraform, the schema through db-migrate"
+spec:
+  goal: Terraform provisions one D1 database per environment and publishes the wiring document the Worker's config renders from; db-migrate applies the monitor_state table before the Worker deploys
+  affects:
+    - infra/terraform/cloudflare-d1
+    - infra/db-migrate
+    - packages/db
+    - tests/db
+    - pnpm-lock.yaml
+  doneWhen:
+    - terraform validate passes on the root, and its wiring keys are the ones the template's tokens name
+    - the migrations apply through the runner into real SQLite, and a second apply applies nothing
+  gates: []
