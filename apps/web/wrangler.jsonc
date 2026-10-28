@@ -1,0 +1,33 @@
+// GENERATED from wrangler.template.jsonc by tooling/wire — edit the
+// template, not this file. The committed copy is the fixture render
+// (`pnpm run wire:fixture`); every Orun lane renders its own environment.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "uptimeflare-web",
+  // The custom entry: the fetch handler @opennextjs/cloudflare generates plus
+  // the `scheduled` handler the Cron Trigger calls (see worker.ts).
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-01",
+  // global_fetch_strictly_public: a check of a URL on this account (another
+  // workers.dev Worker, a zone of its own) goes out over the internet, as an
+  // outside visitor's request would, instead of being refused.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  // ONE Cron Trigger, every minute, as upstream's checker Worker had. Two per
+  // product (stage, prod) fit Workers Free's five per account.
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  // The monitor state — the D1 database upstream's checker and status page shared.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "stg-uptimeflare-stage",
+      "database_id": "00000000-0000-0000-0000-000000000001"
+    }
+  ]
+}

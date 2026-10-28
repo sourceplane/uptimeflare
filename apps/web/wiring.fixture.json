@@ -1,0 +1,14 @@
+{
+  "cloudflare-d1/dev": {
+    "d1_database_id": "00000000-0000-0000-0000-000000000002",
+    "d1_database_name": "dev-uptimeflare-dev"
+  },
+  "cloudflare-d1/stage": {
+    "d1_database_id": "00000000-0000-0000-0000-000000000001",
+    "d1_database_name": "stg-uptimeflare-stage"
+  },
+  "cloudflare-d1/prod": {
+    "d1_database_id": "00000000-0000-0000-0000-000000000003",
+    "d1_database_name": "prod-uptimeflare-prod"
+  }
+}
