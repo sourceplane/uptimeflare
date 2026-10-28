@@ -60,7 +60,7 @@ const workerConfig: WorkerConfig = {
       timeout: 10000,
       // [OPTIONAL] headers to be sent
       headers: {
-        'User-Agent': 'Uptimeflare',
+        'User-Agent': 'UptimeFlare',
         Authorization: 'Bearer YOUR_TOKEN_HERE',
       },
       // [OPTIONAL] body to be sent
