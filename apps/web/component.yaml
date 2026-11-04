@@ -72,6 +72,30 @@ spec:
           - profile: deploy
             when:
               triggerRef: github-push-main
+  # How the status page runs itself for orun.work's live Preview tab
+  # (saas-parallel-baselining PB4): `orun preview` starts this, and a coding
+  # session keeps it running while it works, so the person watches it change
+  # as it is built. The dev server binds the box's loopback only, on a fixed
+  # port, and installs first, so a checkout the session has not installed yet
+  # still comes up.
+  # It installs only this app's packages and runs `next dev` alone, with its
+  # heap capped: the box is shared with the agent. Its D1 is wrangler's local
+  # one, empty until `pnpm run db:migrate:local` runs, and no monitor Worker
+  # checks anything, so the pages show its monitors with no state yet, as a
+  # fresh deploy does before its first check. The tab opens /incidents: `/`
+  # stops under `next dev` (never in a build), because its getServerSideProps
+  # returns the monitors' unset optional fields as `undefined`, which only the
+  # dev server refuses to serialize.
+  preview:
+    run:
+      - sh
+      - -c
+      - pnpm install --frozen-lockfile --prefer-offline --filter "@app/web..." && exec node_modules/.bin/next dev -H 127.0.0.1 -p 3000
+    port: 3000
+    path: /incidents
+    env:
+      NODE_OPTIONS: --max-old-space-size=1024
+      NEXT_TELEMETRY_DISABLED: "1"
   parameters:
     nodeVersion: "22"
     pnpmVersion: "10.12.1"
